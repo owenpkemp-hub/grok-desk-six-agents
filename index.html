@@ -547,4 +547,66 @@ setInterval(ui,500);ui();requestAnimationFrame(draw);addEventListener('resize',(
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.GD={S,RUN,run,fire,settle,lockArb,stepPipeline,setView,setVenue};
 
+
+// ---------- 24/7 HANDS-FREE AUTOPILOT ENGINE ----------
+S.ap = S.ap || {on:true, maxLeg:10, lossStop:35, minEdge:2.2, maxPair:98.2};
+try{
+  const rawAp = JSON.parse(localStorage.getItem('grok_desk_ap')||'null');
+  if(rawAp) Object.assign(S.ap, rawAp);
+}catch(e){}
+function saveAp(){
+  try{localStorage.setItem('grok_desk_ap', JSON.stringify(S.ap))}catch(e){}
+}
+function syncApUI(){
+  const b=$('btnAutopilot'), tb=$('apToggleBtn');
+  if(b){
+    b.textContent = S.ap.on ? `[ 🤖 AUTOPILOT: ON · $${S.ap.maxLeg} ]` : '[ 🤖 AUTOPILOT: OFF ]';
+    b.style.color = S.ap.on ? '#00ff9d' : '#f59e0b';
+    b.style.borderColor = S.ap.on ? '#00ff9d66' : '#f59e0b66';
+  }
+  if(tb){
+    tb.textContent = S.ap.on ? '🤖 HANDS-FREE AUTOPILOT: ON (ACTIVE)' : '⏸ HANDS-FREE AUTOPILOT: PAUSED';
+    tb.style.color = S.ap.on ? '#00ff9d' : '#f59e0b';
+    tb.style.borderColor = S.ap.on ? '#00ff9d' : '#f59e0b';
+  }
+  if($('apMaxLeg')) $('apMaxLeg').value = S.ap.maxLeg;
+  if($('apLossStop')) $('apLossStop').value = S.ap.lossStop;
+  if($('apMinEdge')) $('apMinEdge').value = S.ap.minEdge;
+  if($('apMaxPair')) $('apMaxPair').value = S.ap.maxPair;
+}
+if($('btnAutopilot')) $('btnAutopilot').onclick = ()=>{syncApUI();$('apModal').style.display='flex'};
+if($('apClose')) $('apClose').onclick = $('apCancel').onclick = ()=>{$('apModal').style.display='none'};
+if($('apToggleBtn')) $('apToggleBtn').onclick = ()=>{
+  S.ap.on = !S.ap.on;
+  syncApUI();saveAp();
+  log('GUARD', 'Hands-free Autopilot '+(S.ap.on?'ENABLED':'PAUSED'), 'AUTOPILOT');
+};
+if($('apSave')) $('apSave').onclick = ()=>{
+  S.ap.maxLeg = +($('apMaxLeg').value||10);
+  S.ap.lossStop = +($('apLossStop').value||35);
+  S.ap.minEdge = +($('apMinEdge').value||2.2);
+  S.ap.maxPair = +($('apMaxPair').value||98.2);
+  S.edgeHurdle = S.ap.minEdge/100;
+  syncApUI();saveAp();$('apModal').style.display='none';
+  log('GUARD', `Autopilot guardrails updated: Max $${S.ap.maxLeg}/leg · Stop -$${S.ap.lossStop} · Min Edge ${S.ap.minEdge}¢ · Max Pair ${S.ap.maxPair}¢`, 'AUTOPILOT');
+};
+syncApUI();
+setInterval(()=>{
+  if(!S.ap || !S.ap.on) return;
+  if(S.pnl <= -Math.abs(S.ap.lossStop)){
+    S.ap.on = false; syncApUI(); saveAp();
+    log('GUARD', `CIRCUIT BREAKER HIT: Session PnL $${S.pnl.toFixed(2)} <= -$${S.ap.lossStop}. Halting Autopilot.`, 'HALT');
+    return;
+  }
+  S.edgeHurdle = S.ap.minEdge/100;
+  const edgeCents = Math.abs(S.fair - S.bookP)*100;
+  if(edgeCents >= S.ap.minEdge){
+    stepPipeline();
+    if(S.pos && S.pos.length && (S.bookP + (1 - S.fair) <= S.ap.maxPair/100)){
+      lockArb();
+    }
+    saveState();
+  }
+}, 4000);
+
 </script></body></html>
