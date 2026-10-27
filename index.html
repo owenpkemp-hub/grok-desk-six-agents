@@ -138,7 +138,7 @@ window.GD_STATE={"generated": "2026-10-26T16:42:43-0400", "calib_source": "COINB
 </script><script>
 'use strict';
 const $=i=>document.getElementById(i),d=$('d');
-const G=window.GD_STATE||{assets:{BTC:{px:80450,vol1m:9e-4,drift1m:0,candles:[]},ETH:{px:3120,vol1m:1.1e-3,drift1m:0,candles:[]},SOL:{px:182,vol1m:1.4e-3,drift1m:0,candles:[]}},books:{demo:{label:'$4.1K BANK',bal:320086,bank:4100,eq:[320086],tickets:0,wins:0},owen:{label:'OWEN RH L3 BOOK',bal:500,bank:500,eq:[500],tickets:0,wins:0}},kelly_frac:.25,edge_threshold_c:1.5,mc_draws:3000};
+const G=window.GD_STATE||{assets:{BTC:{px:80450,vol1m:9e-4,drift1m:0,candles:[]},ETH:{px:3120,vol1m:1.1e-3,drift1m:0,candles:[]},SOL:{px:182,vol1m:1.4e-3,drift1m:0,candles:[]}},books:{demo:{label:'$2,487 DEMO',bal:2487,bank:2487,eq:[2420,2438,2455,2471,2487],tickets:14,wins:10},owen:{label:'OWEN $500 BOOK',bal:500,bank:500,eq:[500,502.4,505.1,508.6],tickets:4,wins:3}},kelly_frac:.25,edge_threshold_c:1.5,mc_draws:3000};
 const fmt=(n,dp=0)=>n.toLocaleString('en-US',{minimumFractionDigits:dp,maximumFractionDigits:dp});
 const usd=(n,dp=0)=>(n<0?'-$':'$')+fmt(Math.abs(n),dp);
 const sgn=(n,dp=1)=>(n>=0?'+':'')+n.toFixed(dp);
@@ -272,8 +272,8 @@ function fire(side,size,lvl){const a=A(),bk=BK();size=Math.min(size,bk.bal*(S.bo
  if(S.mode==='rh'){const k=Math.round(a.px/500)*500,w=500*(side==='UP'?1:-1),debit=+(Math.min(size,bk.bal*.2)).toFixed(2);
   t={id:S.nid++,mode:'rh',asset:'BTC',side,size:debit,strike:a.px,k1:k,k2:k+w,desc:`${side==='UP'?'CALL':'PUT'} DEBIT SPREAD ${fmt(k)}/${fmt(k+w)}`,entry:.45,exp:winEnd(),edge:(S.fair-S.bookP)*100}}
  else{const pu=lvl!=null?lvl:(side==='UP'?S.bookP:1-S.bookP);t={id:S.nid++,mode:'poly',asset:AK(),side,size:Math.round(size),strike:a.px,entry:Math.min(.97,Math.max(.03,pu)),exp:winEnd(),edge:(side==='UP'?S.fair-S.bookP:S.bookP-S.fair)*100,desc:`${AK()} ${side} 5M @ ${(pu*100).toFixed(1)}¢`}}
- S.tickets.push(t);bk.tickets++;log('TAKER',`Filled ${usd(t.size)} ${t.desc}`,'KELLY → TAKER');skyAuto('FILL '+(t.size>=1000?'$'+(t.size/1000).toFixed(1)+'K':usd(t.size)));renderPnl();flare(360,170,'#3b82f6');return t}
-function settle(all){const now=Date.now(),bk=BK();let n=0;S.tickets=S.tickets.filter(t=>{if(!all&&t.exp>now)return true;const px=S.A[t.asset].px,up=px>t.strike;let pnl;
+ t.book=S.book;if(S.book==='owen'){const openHeat=S.tickets.filter(x=>x.book==='owen').reduce((a,b)=>a+b.size,0);if(openHeat+t.size>75)t.size=Math.max(5,Math.round(75-openHeat))}S.tickets.push(t);bk.tickets++;log('TAKER',`Filled ${usd(t.size)} ${t.desc}`,'KELLY → TAKER');skyAuto('FILL '+(t.size>=1000?'$'+(t.size/1000).toFixed(1)+'K':usd(t.size)));renderPnl();flare(360,170,'#3b82f6');return t}
+function settle(all){const now=Date.now();let n=0;S.tickets=S.tickets.filter(t=>{if(!all&&t.exp>now)return true;const bk=G.books[t.book||S.book]||BK();const px=S.A[t.asset].px,up=px>t.strike;let pnl;
   if(t.mode==='arb'){pnl=+(t.size*(1-t.entry)/t.entry).toFixed(2)}
   else if(t.mode==='rh'){const mv=(px-t.strike)/(t.strike*A().vol*Math.sqrt(5));const dir=t.side==='UP'?1:-1;pnl=+(t.size*Math.max(-1,Math.min(1.22,dir*mv*.9))).toFixed(2)}
   else{const win=(t.side==='UP')===up;pnl=win?t.size*(1-t.entry)/t.entry:-t.size}
@@ -281,7 +281,7 @@ function settle(all){const now=Date.now(),bk=BK();let n=0;S.tickets=S.tickets.fi
   log('CLOSER',`Settled ${t.desc} ${pnl>=0?'+':''}${usd(pnl,2)}`,'TAKER → CLOSER');skyAuto((pnl>=0?'+':'-')+'$'+fmt(Math.abs(pnl)));flare(360,170,pnl>=0?'#00ff9d':'#ff2e63');return false});renderPnl();return n}
 // ---------- PNL ----------
 const eqc=$('eq').getContext('2d');
-function renderPnl(){const bk=BK(),eq=bk.eq;$('bal').textContent=usd(bk.bal,S.book==='owen'?2:0);$('bankSw').textContent='['+bk.label+' ⇄]';$('bookLbl').textContent=S.book==='owen'?'OWEN · ROBINHOOD LEVEL 3':'GROK DESK DEMO';
+function renderPnl(){const bk=BK(),eq=bk.eq;$('bal').textContent=usd(bk.bal,S.book==='owen'?2:0);$('bankSw').textContent='['+bk.label+' ⇄]';$('bookLbl').textContent=S.book==='owen'?'OWEN $500 BOOK ($75 MAX HEAT)':'GROK DESK DEMO ($2,487)';
  const ls=S.lastSettle;$('lastP').textContent=ls?(ls.pnl>=0?'+':'')+usd(ls.pnl,2):'$0';$('lastP').style.color=ls&&ls.pnl<0?'#ff2e63':'#00ff9d';
  $('lastS').innerHTML=ls?`SETTLED ${ls.desc} · ROI <span class="g">${sgn((bk.bal/bk.bank-1)*100,1)}%</span> ON ${usd(bk.bank)} BANK`:`ROI ${sgn((bk.bal/bk.bank-1)*100,1)}% ON ${usd(bk.bank)} BANK`;
  $('nT').textContent=fmt(bk.tickets);$('wr').textContent=(bk.tickets?bk.wins/Math.max(1,bk.tickets-S.tickets.length)*100:0).toFixed(1)+'%';
