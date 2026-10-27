@@ -1,0 +1,30 @@
+{
+  "name": "GROK DESK \u2014 SIX AGENTS \u00b7 ONE BOOK \u00b7 BTC 5M POLYMARKET",
+  "short_name": "GROK DESK",
+  "description": "Six-Agent Autonomous Quantitative Polymarket & Kalshi 5M Binary Desk (QUANT \u00b7 MACRO \u00b7 SENTIMENT \u00b7 RISK \u00b7 EXECUTION \u00b7 CHIEF)",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05050b",
+  "theme_color": "#05050b",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
